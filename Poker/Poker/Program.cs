@@ -43,7 +43,7 @@ namespace Poker
         {
             public char valeur;
             public int famille;
-        };
+        };public static Random rnd=new Random();
 
         // Liste des combinaisons possibles
         public enum combinaison { RIEN, PAIRE, DOUBLE_PAIRE, BRELAN, QUINTE, FULL, COULEUR, CARRE, QUINTE_FLUSH };
@@ -68,6 +68,14 @@ namespace Poker
         // Retourne une expression de type "structure carte"
         public static carte tirage()
         {
+        	int indiceValeur = rnd.Next(0, valeurs.Length);
+        	int indiceFamille = rnd.Next(0, familles.Length);
+        	
+        	carte nouvelleCarte = new carte
+        	{
+        		valeur = valeurs[indiceValeur],
+        		famille = familles[indiceFamille],
+        	};
             
         }
 
@@ -76,6 +84,14 @@ namespace Poker
         // Retourne un entier (booléen)
         public static bool carteUnique(carte uneCarte, carte[] unJeu, int numero)
         {
+        	for (int i = 0; i < numero; i++)
+    		{
+        		if (unJeu[i].valeur == uneCarte.valeur && unJeu[i].famille == uneCarte.famille)
+        			{
+            			return false;
+        			}
+    		}
+    		return true;
 
         }
 
@@ -84,16 +100,109 @@ namespace Poker
         // La valeur retournée est un élement de l'énumération 'combinaison' (=constante)
         public static combinaison chercheCombinaison(carte[] unJeu)
         {
+        	 Array.Sort(unJeu, (x, y) => y.valeur.CompareTo(x.valeur)); // Trie les cartes par valeur décroissante
+
+    		// Combinaison : Quinte Flush
+    		bool hasQuinteFlush = unJeu[0].valeur - unJeu[4].valeur == 4 && unJeu[0].famille == unJeu[1].famille && unJeu[1].famille == unJeu[2].famille && unJeu[2].famille == unJeu[3].famille && unJeu[3].famille == unJeu[4].famille;
+
+    		// Combinaison : Carré, Full, Couleur, Suite, Brelan, Double Paire, Paire
+    		combinaison result = combinaison.RIEN;
+    		for (int i = 0; i < unJeu.Length - 1; i++)
+    		{
+        		int count = 1;
+        		for (int j = i + 1; j < unJeu.Length; j++)
+        		{
+            		if (unJeu[i].valeur == unJeu[j].valeur)
+            		{
+                		count++;
+            		}
+        		}
+
+        		if (count == 4)
+        		{
+            		return combinaison.CARRE;
+        		}
+        		else if (count == 3)
+        		{
+            		if (result == combinaison.PAIRE)
+            		{
+                		result = combinaison.FULL;
+            		}
+            		else
+            		{
+                		result = combinaison.BRELAN;
+            		}
+        		}
+        		else if (count == 2)
+        		{
+            		if (result == combinaison.PAIRE)
+            		{
+                		result = combinaison.DOUBLE_PAIRE;
+            		}
+            		else if (result == combinaison.BRELAN)
+            		{
+                		result = combinaison.FULL;
+            		}
+            		else
+            		{
+                		result = combinaison.PAIRE;
+            		}
+        		}
+    		}
+
+    		// Combinaisons finales
+    		if (hasQuinteFlush)
+    		{
+        		return combinaison.QUINTE_FLUSH;
+    		}
+    		else if (result != combinaison.RIEN)
+    		{
+        		return result;
+    		}
+    		else if (unJeu[0].valeur - unJeu[4].valeur == 4)
+    		{
+        		return combinaison.QUINTE;
+    		}
+    		else if (unJeu[0].famille == unJeu[1].famille && unJeu[1].famille == unJeu[2].famille && unJeu[2].famille == unJeu[3].famille && unJeu[3].famille == unJeu[4].famille)
+    		{
+        		return combinaison.COULEUR;
+    		}
+    		else
+    		{
+        		return combinaison.RIEN;
+    		}
+        	
 
         }
 
         // Echange des cartes
         // Paramètres : le tableau de 5 cartes et le tableau des numéros des cartes à échanger
-        private static void echangeCarte(carte[] unJeu, int[] e)
-        {
+		private static void echangeCarte(carte[] unJeu, int[] e)
+		{
+    		Console.WriteLine("\nEntrez les numéros des cartes que vous souhaitez échanger (1 à 5, séparés par des espaces) :");
+    		string input = Console.ReadLine();
+    		string[] tokens = input.Split(' ');
 
+    		for (int i = 0; i < e.Length; i++)
+    			{
+        			if (int.TryParse(tokens[i], out e[i]) && e[i] >= 1 && e[i] <= 5)
+        			{
+            			e[i]--; // ajuster pour l'indice du tableau
+        			}
+        			else
+        		{
+            	Console.WriteLine("Numéro de carte invalide. Veuillez entrer des numéros valides.");
+            	echangeCarte(unJeu, e); // redemande les numéros d'échange
+            	return;
+        		}
+    	}
 
-        }
+    // Échanger les cartes sélectionnées
+    for (int i = 0; i < e.Length; i++)
+    {
+        unJeu[e[i]] = tirage();
+    }
+}
 
         // Pour afficher le Menu pricipale
         private static void afficheMenu()
@@ -105,13 +214,38 @@ namespace Poker
 		// Ici que vous appellez toutes les fonction permettant de joueur au poker
         private static void jouerAuPoker()
         {
+        	carte[] MonJeu = new carte[5];
+    		int[] cartesAEchanger = new int[5];
+
+    		tirageDuJeu(MonJeu);
+   			affichageCarte(MonJeu);
+
+    		Console.WriteLine("\nVoulez-vous échanger des cartes ? (O/N)");
+    		char reponse = char.ToUpper(Console.ReadKey().KeyChar);
+
+    		if (reponse == 'O')
+    			{
+        			echangeCarte(MonJeu, cartesAEchanger);
+        			affichageCarte(MonJeu);
+    			}
+
+    		afficheResultat(MonJeu);
+    		enregistrerJeu(MonJeu);
 
         }
 
         // Tirage d'un jeu de 5 cartes
         // Paramètre : le tableau de 5 cartes à remplir
         private static void tirageDuJeu(carte[] unJeu)
-        {
+        { 
+        	for (int i = 0; i < 5; i++)
+    		{
+        		do
+        		{
+            		unJeu[i] = tirage();
+        		} 	
+        		while (!carteUnique(unJeu[i], unJeu, i));
+    		}
 
         }
 
@@ -166,14 +300,60 @@ namespace Poker
 
         // Enregistre le score dans le txt
         private static void enregistrerJeu(carte[] unJeu)
-        {
-          
-        }
+		{
+    		string scoresFilePath = "scores.txt";
+
+    		// Assurez-vous que le fichier existe avant d'essayer d'écrire dedans
+    		if (File.Exists(scoresFilePath))
+    		{
+        		using (StreamWriter writer = new StreamWriter(scoresFilePath, true))
+        		{
+            		string scoreLine = "{GetFormattedTimestamp()}: {chercheCombinaison(unJeu)}";
+            		writer.WriteLine(scoreLine);
+        		}
+
+        		Console.WriteLine("Score enregistré avec succès.");
+    		}
+    		else
+    		{
+       			Console.WriteLine("Impossible d'enregistrer le score. Fichier introuvable.");
+    		}
+		}
+
+		private static string GetFormattedTimestamp()
+		{
+    		// Retourne un horodatage simple sous forme de chaîne
+    		return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+		}
+
 
         // Affiche le Scores
         private static void voirScores()
         {
-           
+        	string scoresFilePath = "scores.txt";
+
+    		if (File.Exists(scoresFilePath))
+    		{
+        		string[] scores = File.ReadAllLines(scoresFilePath);
+
+        		if (scores.Length > 0)
+        		{
+            		Console.WriteLine("Scores enregistrés :");
+
+            		foreach (string score in scores)
+            		{
+                		Console.WriteLine(score);
+            		}
+        		}
+        		else
+        		{
+            		Console.WriteLine("Aucun score enregistré.");
+        		}
+    		}
+   			else
+    		{
+        		Console.WriteLine("Aucun score enregistré.");
+    		}
         }
 
         // Affiche résultat
