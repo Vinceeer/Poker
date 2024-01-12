@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Poker
 {
@@ -76,6 +77,8 @@ namespace Poker
         		valeur = valeurs[indiceValeur],
         		famille = familles[indiceFamille],
         	};
+        	return nouvelleCarte;
+        	
             
         }
 
@@ -98,7 +101,7 @@ namespace Poker
         // Calcule et retourne la COMBINAISON (paire, double-paire... , quinte-flush)
         // pour un jeu complet de 5 cartes.
         // La valeur retournée est un élement de l'énumération 'combinaison' (=constante)
-        public static combinaison chercheCombinaison(carte[] unJeu)
+        public static combinaison chercheCombinaison(ref carte[] unJeu)
         {
         	 Array.Sort(unJeu, (x, y) => y.valeur.CompareTo(x.valeur)); // Trie les cartes par valeur décroissante
 
@@ -185,14 +188,14 @@ namespace Poker
 
     		for (int i = 0; i < e.Length; i++)
     			{
-        			if (int.TryParse(tokens[i], out e[i]) && e[i] >= 1 && e[i] <= 5)
-        			{
-            			e[i]--; // ajuster pour l'indice du tableau
-        			}
-        			else
+        			if (e[i] >= 0 && e[i] < MonJeu.Length)
+    				{
+        				unJeu[e[i]] = tirage();
+    				}
+    				else
         		{
             	Console.WriteLine("Numéro de carte invalide. Veuillez entrer des numéros valides.");
-            	echangeCarte(unJeu, e); // redemande les numéros d'échange
+            	echangeCarte(MonJeu, e); // redemande les numéros d'échange
             	return;
         		}
     	}
@@ -207,6 +210,16 @@ namespace Poker
         // Pour afficher le Menu pricipale
         private static void afficheMenu()
         {
+        	SetConsoleTextAttribute(hConsole, (int)couleur.ROUGE);
+        	Console.WriteLine("*----------------*");
+        	Console.WriteLine("|      POKER     |");
+    		Console.WriteLine("|1.    Jouer     |");
+    		Console.WriteLine("|2.    Scores    |");
+    		Console.WriteLine("|3.    Quitter   |");
+    		Console.WriteLine("*----------------*");
+    		Console.Write("Choisissez une option (1-3): ");
+
+
 
         }
 
@@ -214,22 +227,25 @@ namespace Poker
 		// Ici que vous appellez toutes les fonction permettant de joueur au poker
         private static void jouerAuPoker()
         {
-        	carte[] MonJeu = new carte[5];
-    		int[] cartesAEchanger = new int[5];
+        	int[] cartesAEchanger = new int[5];
 
     		tirageDuJeu(MonJeu);
-   			affichageCarte(MonJeu);
+    		affichageCarte();
 
     		Console.WriteLine("\nVoulez-vous échanger des cartes ? (O/N)");
     		char reponse = char.ToUpper(Console.ReadKey().KeyChar);
 
     		if (reponse == 'O')
-    			{
-        			echangeCarte(MonJeu, cartesAEchanger);
-        			affichageCarte(MonJeu);
-    			}
-
+    		{
+        		echangeCarte(MonJeu, cartesAEchanger);
+        		Thread.Sleep(2000);
+        		Console.Clear();
+        		affichageCarte();
+    		}
+    		
     		afficheResultat(MonJeu);
+    		Thread.Sleep(2000);
+    		Console.Clear();
     		enregistrerJeu(MonJeu);
 
         }
@@ -242,9 +258,9 @@ namespace Poker
     		{
         		do
         		{
-            		unJeu[i] = tirage();
-        		} 	
-        		while (!carteUnique(unJeu[i], unJeu, i));
+            		MonJeu[i] = tirage();
+        		} 
+        		while (!carteUnique(MonJeu[i], MonJeu, i));
     		}
 
         }
@@ -257,9 +273,13 @@ namespace Poker
             //----------------------------
             int left = 0;
             int c = 1;
+            for (int i = 0; i < 5; i++) {
+            	Console.WriteLine(MonJeu[i].valeur + MonJeu[i].famille);
+            }
             // Tirage aléatoire de 5 cartes
             for (int i = 0; i < 5; i++)
             {
+            	MonJeu[i] = tirage();
                 // Tirage de la carte n°i (le jeu doit être sans doublons !)
 
                 // Affichage de la carte
@@ -301,30 +321,24 @@ namespace Poker
         // Enregistre le score dans le txt
         private static void enregistrerJeu(carte[] unJeu)
 		{
-    		string scoresFilePath = "scores.txt";
+                    SetConsoleTextAttribute(hConsole, 010);
+                Console.Write("Entrez votre nom ou pseudo : ");
+                string nom = Console.ReadLine();
 
-    		// Assurez-vous que le fichier existe avant d'essayer d'écrire dedans
-    		if (File.Exists(scoresFilePath))
-    		{
-        		using (StreamWriter writer = new StreamWriter(scoresFilePath, true))
-        		{
-            		string scoreLine = "{GetFormattedTimestamp()}: {chercheCombinaison(unJeu)}";
-            		writer.WriteLine(scoreLine);
-        		}
+                // Création ou ouverture du fichier scores.txt en mode écriture (FileMode.Append)
+                using (StreamWriter writer = new StreamWriter("scores.txt", true))
+                {
+                    // Format de l'enregistrement : nom;famille1valeur1;famille2valeur2;...;famille5valeur5
+                        writer.Write("{nom};");
+                    foreach (carte carte in unJeu)
+                    {
+                        writer.Write("{carte.famille}{carte.valeur};");
+                    }
+                    writer.WriteLine(); // Passer à une nouvelle ligne pour le prochain enregistrement
+                }
 
-        		Console.WriteLine("Score enregistré avec succès.");
-    		}
-    		else
-    		{
-       			Console.WriteLine("Impossible d'enregistrer le score. Fichier introuvable.");
-    		}
-		}
-
-		private static string GetFormattedTimestamp()
-		{
-    		// Retourne un horodatage simple sous forme de chaîne
-    		return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-		}
+                    Console.WriteLine("Le jeu a été enregistré avec succès !");
+            }
 
 
         // Affiche le Scores
@@ -385,6 +399,8 @@ namespace Poker
                     case combinaison.QUINTE_FLUSH:
                         Console.WriteLine("une quinte-flush; royal!"); break;
                 };
+                
+
             }
             catch { }
         }
@@ -415,6 +431,7 @@ namespace Poker
                 if (reponse == '1')
                 {
                     int i = 0;
+                    Console.Clear();
                     jouerAuPoker();
                 }
 
@@ -427,6 +444,7 @@ namespace Poker
             }
             Console.Clear();
         }
+        
     }
 }
 
