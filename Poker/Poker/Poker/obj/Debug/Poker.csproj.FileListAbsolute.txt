@@ -12,6 +12,3 @@ C:\Users\loloo\OneDrive\Documents\Poker\Poker\Poker\obj\Debug\Poker.exe
 C:\Users\loloo\OneDrive\Documents\Poker\Poker\Poker\bin\Debug\Poker.exe
 C:\Users\loloo\OneDrive\Documents\Poker\Poker\Poker\bin\Debug\Poker.pdb
 C:\Users\loloo\OneDrive\Documents\Poker\Poker\Poker\obj\Debug\Poker.pdb
-C:\Users\v.rey\Documents\Poker\Poker\Poker\bin\Debug\Poker.exe
-C:\Users\v.rey\Documents\Poker\Poker\Poker\bin\Debug\Poker.pdb
-C:\Users\v.rey\Documents\Poker\Poker\Poker\obj\Debug\Poker.pdb
